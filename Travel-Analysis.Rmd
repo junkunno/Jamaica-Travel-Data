@@ -1,0 +1,265 @@
+---
+title: "Jamaica Travel Data for 2019"
+author: "Dominique McIntosh"
+date: '2022-07-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Visit Jamaica
+
+### A dive into visitor data regarding travel to Jamaica for the year 2016:
+
+-   Who was coming?
+
+-   Why?
+
+-   How many? Etc.
+
+For more analysis & visualizations including an interactive Excel dashboard click here.
+
+For a more detailed look at SQL queries run to generate some of the csv files, head over to Github
+
+## Why this project?
+
+Just sheer curiosity about the information that was available. My history running a bed & breakfast for the past few years, you start to notice certain trends about the visitors. While I had a few obvious confirmations, it was still surprisingly, a bit of an eye-opener after analyzing the raw information.
+
+## Summary of The Data Source
+
+The source of the travel data came from [Jamaica Open Data](https://data.gov.jm/), a public data repository provided by the Jamaican government from the various ministries that includes a variety of data from traffic to health. The most recent travel data available on this platform was for the year 2016.
+
+-   Actual data was collected from embarkation/disembarkation cards (immigration forms) all air passengers are required to fill out on arrival.
+
+-   N.B.: Jamaican nationals who reside overseas are included in the numbers.
+
+-   Cruise passengers flying into the island to meet the cruise ship are not included in tourist arrival figures unless they spend at least one night in a land-based accommodation.
+
+-   The file is a CSV file.
+
+## Summary of Data Cleaning
+
+-   The CSV file was imported into Excel.
+
+-   Adjusted & formatted data:
+
+    -   changed header titles for clarification
+
+    -   confirmed correct data types
+
+    -   remove some abbreviations & replaced with full word
+
+-   Removed Duplicated (47)
+
+-   Removed spaces (trim())
+
+-   Corrected misspellings
+
+-   Performed preliminary analysis: complete & accurate
+
+## A little Analysis & Data Visualizations Using R:
+
+#### Installing & loading the following packages & libraries:
+
+-   tidyverse
+
+-   dplyr
+
+-   ggplot2
+
+-   ggthemes
+
+```{r, echo=FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+```
+
+#### Importing csv files created with SQL
+
+```{r, echo=FALSE}
+travel_reason <- read.csv("reason_for_travel-SQL.csv")
+airport_arrivals <- read.csv("total_travelers-port_of_entry-SQL.csv")
+country <- read.csv("visitors_country-SQL.csv")
+```
+
+### Total Arrivals by Airport
+
+```{r, echo=FALSE}
+airport_arrivals %>% 
+  ggplot(aes(x=port_of_entry, y=total_visitors, fill = port_of_entry, width = .8))+
+  geom_bar(stat = "identity")+
+  theme_clean()+ #TRYING ONE OF THE THEMES
+    scale_fill_discrete(labels = c("NMIA - Kingston", 
+                                 "SIA - Montego Bay"))+
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",",
+                                                 scientific = FALSE))+ # ADDS "," to big numbers on AXES
+  labs(title="Total Arrivals by Airport", subtitle = " Data for 2016", y="Total Visitors",
+       x = "Port Of Entry", fill =" Airport")+
+    annotate("text",x=1,label="700,000",y=600000,size=4,fontface="italic")+
+  annotate("text", x=2, label="1.6 Million", y=1500000, size=4, fontface="bold.italic")
+```
+
+### Top 5 Countries that visited Jamaica
+
+```{r, echo=FALSE}
+country %>% # Piping the Data
+  filter(country != "VAC") %>% # FILTERING OUT THIS ERROR
+  slice_max(total_visitors, n=5) %>%  # ONLY LOAD THE TOP 5
+  mutate(country = fct_reorder(country, total_visitors)) %>%  # REORDERING BY VALUE 
+  ggplot(aes(x=country, y=total_visitors, fill = country, width = .9))+
+  geom_bar(stat = "identity")+
+  labs(title="Top 5 Countries that Visited Jamaica", subtitle = "Data for 2016", y="Total Visitors")+
+  annotate("text",x=1,label="13,500",y=100000,size=4,fontface="italic")+
+  annotate("text", x=2, label="22,000", y=100000, size=4, fontface="italic")+
+  annotate("text", x=3, label="214,000", y=100000, size=4, fontface="italic")+
+  annotate("text", x=4, label="407,000", y=100000, size=4, fontface="italic")+
+  annotate("text", x=5, label="1.4 Million", y=1000000, size=4, fontface="bold.italic")+
+  theme(legend.position = "none",
+        axis.text.y=element_blank(), # REMOVE Y-AXIS data (too far apart)
+        axis.title.x=element_blank(),
+        axis.ticks.x=element_blank()# REMOVE DEFAULT X-AXIS Title - NOT NEEDED
+        )
+
+```
+
+### Top 5 Reasons for Travel to Jamaica from The USA
+
+```{r, echo=FALSE}
+travel_reason %>% 
+  filter(country == "U.S.A.") %>% 
+  slice_max(total_visitors, n=5) %>% 
+  mutate(reason_for_travel = fct_reorder(reason_for_travel, total_visitors)) %>% 
+  ggplot(aes(x=reason_for_travel, y=total_visitors, fill = reason_for_travel, width = .8))+
+  geom_bar(stat = "identity")+
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",",
+                                                 scientific = FALSE))+ # ADDS "," to big numbers on AXES
+  labs(title="Top 5 Reasons for Travel to \nJamaica from The USA",  subtitle = "Data for 2016",
+       y="Total Visitors"  )+
+  annotate("text",x=1,label="43,220",y=125000,size=4,fontface="bold.italic")+ #ADDING SPECIFIC NUMBERS TO Bars
+  annotate("text", x=2, label="79,767", y=150000, size=4, fontface="bold.italic")+
+  annotate("text", x=3, label="115,603", y=200000, size=4, fontface="bold.italic")+
+  annotate("text", x=4, label="186,624", y=260000, size=4, fontface="bold.italic")+
+  annotate("text", x=5, label="912,314", y=600000, size=5, fontface="bold.italic")+
+  theme(legend.position = "none", # REMOVE THE LEGEND - Not Needed
+        title = element_text(family = "special", face="bold"),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(face="bold", family="special"),
+        axis.text.y = element_text(face="bold", family="special")
+        )+                       
+  coord_flip()
+```
+
+### Top 5 Reasons for Travel to Jamaica from Canada
+
+```{r, echo=FALSE}
+travel_reason %>% 
+  filter(country == "CANADA") %>% #APPLY FILTER FOR CANADA
+  slice_max(total_visitors, n=6) %>% #FILTER TO SHOW TOP 5
+    mutate(reason_for_travel = fct_reorder(reason_for_travel, desc(total_visitors))) %>% 
+  ggplot(aes(x= reason_for_travel, y=total_visitors)) +
+  #----DECORATING THE STEM 
+  geom_segment(aes(x=reason_for_travel, xend=reason_for_travel, y=0, yend=total_visitors),
+               size=1,
+               color="tomato")+ 
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",",
+                                                 scientific = FALSE))+
+  #DECORATING THE LOLLIPOP
+  geom_point(stat="identity", size=4, 
+             color="purple",
+             fill=alpha("pink", .3), #---color inside circle
+             alpha=1,
+             shape=21,
+             stroke=1) + 
+  #TRYING ONE OF THE THEMES
+  theme_clean()+ 
+  labs(title="Top 5 Reasons for Travel to Jamaica from Canada",  subtitle = "Data for 2016",
+       y="Total Visitors"  )+
+  geom_text(aes(label = format(total_visitors, big.mark = ",")), vjust=-1)+ #ADDING "," to labels
+  theme(legend.position = "none", # REMOVE THE LEGEND - Not Needed
+        title = element_text(family = "special", face="bold"),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(face="bold", family="special"),
+        axis.text.y = element_text(face="bold", family="special"))+                       
+  coord_flip()
+```
+
+### Top 5 Reasons Travel To Jamaica from the UK
+
+```{r, echo=FALSE}
+travel_reason %>% # Piping the Data
+  filter(country=="UNITED KINGDOM") %>% #Filter for the UK
+  slice_max(total_visitors, n=6) %>% 
+  mutate(reason_for_travel = fct_reorder(reason_for_travel, total_visitors)) %>% 
+  ggplot(aes(x=reason_for_travel, y=total_visitors, fill = reason_for_travel, width = .9))+
+  geom_bar(stat = "identity")+
+  geom_text(aes(label = format(total_visitors, big.mark = ",")), vjust = 1.5, colour = "black")+
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",",
+                                                 scientific = FALSE))+
+  labs(title="Overall Reason for Travel to Jamaica in 2016", y="Total Visitors")+
+  theme(legend.position = "none", # REMOVE THE LEGEND - Not Needed
+        title = element_text(family = "special", face="bold"),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(face="bold", family="special"),
+        axis.text.y = element_text(face="bold", family="special")
+  )+                       
+  coord_flip()
+
+```
+
+### Other than the Big Three (US,CA,UK) - who else came? Top 25
+
+```{r, echo=FALSE}
+country %>% 
+  filter(country != "VAC" & country != "U.S.A." & country != "CANADA"
+         & country != "UNITED KINGDOM") %>% #APPLY FILTER FOR The BIG 3
+  slice_max(total_visitors, n=25) %>%
+  mutate(country = fct_reorder(country, total_visitors)) %>% 
+  ggplot(aes(x= country, y=total_visitors)) +
+  
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",",
+                                                 scientific = FALSE))+
+  theme_clean()+
+  #----DECORATING THE STEM 
+  geom_segment(aes(x=country, xend=country, y=0, yend=total_visitors),
+               size=1,
+               color="pink")+ 
+  #DECORATING THE LOLLIPOP
+  geom_point(stat="identity", size=2, 
+             color="purple",
+             fill=alpha("purple", .3), #---color inside circle
+             alpha=1,
+             shape=21,
+             stroke=1) + 
+  labs(title="Top 25 Countries outside of 'The Big Three'",  subtitle = "Data for 2016",
+       y="Total Visitors"  )+
+    theme(legend.position = "none",
+        title = element_text(family = "special", face="bold"), #OVERALL TITLE
+        axis.title.x=element_blank(),
+        axis.text.x=element_text(face="bold")#----REMOVING THE DEFAULT X-AXIS TITLES
+            )+
+  coord_flip()
+```
+
+### Conclusions:
+
+-   No surprise that the 'Big Three' (US, Canada, UK) dominate the visitor numbers, however the United States far eclipsed even the other two countries by more than double their amounts!
+
+-   The Cayman Islands travel numbers were also surprising. With a population of only 67,000, to be Jamaica's number 4 in total visitors I don't think anyone could have guessed.
+
+-   IT'S A VIBE 🥳! VACATION is the number 1 reason people come to Jamaica (no real surprise there).
+
+### Recommendations:
+
+-   Jamaica's tourism product is very precious & helps to drive the country's economy. It would be beneficial for the government to encourage travel to the island targeting other markets/countries outside of the Big Three.
+
+-   In addition, it might also be beneficial to encourage travel to the island for reasons other than vacationing, such as for business & sport (which the country dominates globally when it comes to track & field).
+
+Well that's my little project about visitor data to Jamaica. I hope it was interesting and eye-opening!
+
+Thanks for having a look!
+
+Dominique
