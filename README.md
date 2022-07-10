@@ -86,4 +86,6 @@ Well that's my little project about visitor data to Jamaica. I hope it was inter
 
 Thanks for having a look!
 
+**ps. for my [Kaggle profile click here](https://www.kaggle.com/dominiquemcintosh/notebooks),  also check out [my website](https://junkunno.github.io/)!**
+
 Dominique
